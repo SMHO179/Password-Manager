@@ -2,17 +2,24 @@ import sqlite3
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.table import Table
+from cryptography.fernet import Fernet
 
 console = Console()
 
 DB_NAME = "vault.db"
+KEY_FILE = "secret.key"
 
-# ------------------ CONNECTION ------------------
+# ------------------ LOAD KEY ------------------
+
+def load_key():
+    return open(KEY_FILE, "rb").read()
+
+fernet = Fernet(load_key())
+
+# ------------------ DB ------------------
 
 def get_connection():
     return sqlite3.connect(DB_NAME)
-
-# ------------------ INIT DB ------------------
 
 def init_db():
     conn = get_connection()
@@ -31,32 +38,37 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ------------------ ADD PASSWORD ------------------
+# ------------------ ENCRYPT ------------------
+
+def encrypt_password(password: str) -> str:
+    return fernet.encrypt(password.encode()).decode()
+
+def decrypt_password(password: str) -> str:
+    return fernet.decrypt(password.encode()).decode()
+
+# ------------------ ADD ------------------
 
 def add_password():
     site = Prompt.ask("Site")
     username = Prompt.ask("Username")
     password = Prompt.ask("Password", password=True)
 
+    encrypted = encrypt_password(password)
+
     conn = get_connection()
     cur = conn.cursor()
 
-    try:
-        cur.execute(
-            "INSERT INTO passwords (site, username, password) VALUES (?, ?, ?)",
-            (site, username, password)
-        )
+    cur.execute(
+        "INSERT INTO passwords (site, username, password) VALUES (?, ?, ?)",
+        (site, username, encrypted)
+    )
 
-        conn.commit()
-        console.print("[green]✔ Saved successfully![/green]")
+    conn.commit()
+    conn.close()
 
-    except Exception as e:
-        console.print(f"[red]Error: {e}[/red]")
+    console.print("[green]✔ Saved encrypted password![/green]")
 
-    finally:
-        conn.close()
-
-# ------------------ LIST PASSWORDS ------------------
+# ------------------ LIST ------------------
 
 def list_passwords():
     conn = get_connection()
@@ -65,16 +77,24 @@ def list_passwords():
     cur.execute("SELECT id, site, username, password, created_at FROM passwords")
     rows = cur.fetchall()
 
-    table = Table(title="Vault")
+    table = Table(title="Vault (Decrypted View)")
 
-    table.add_column("ID", style="cyan")
-    table.add_column("Site", style="magenta")
-    table.add_column("Username", style="green")
-    table.add_column("Password", style="red")
-    table.add_column("Created At", style="yellow")
+    table.add_column("ID")
+    table.add_column("Site")
+    table.add_column("Username")
+    table.add_column("Password")
+    table.add_column("Created")
 
     for row in rows:
-        table.add_row(str(row[0]), row[1], row[2], row[3], str(row[4]))
+        decrypted = decrypt_password(row[3])
+
+        table.add_row(
+            str(row[0]),
+            row[1],
+            row[2],
+            decrypted,
+            str(row[4])
+        )
 
     console.print(table)
     conn.close()
