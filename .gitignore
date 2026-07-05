@@ -1,1 +1,7 @@
 .venv/
+secret.key
+vault.db
+*.db
+*.key
+__pycache__/
+.venv/
