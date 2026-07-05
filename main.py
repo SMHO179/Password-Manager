@@ -1,18 +1,46 @@
 import psycopg2
 
-try:
-    conn = psycopg2.connect(
-        dbname="testdb",
-        user="testuser",
-        password="1234",
-        host="localhost",
-        port=5432
-    )
-    print("ok !! connected")
+DB_CONFIG = {
+    "dbname": "testdb",
+    "user": "testuser",
+    "password": "1234",
+    "host": "localhost",
+    "port": 5432
+}
+
+def get_connection():
+    return psycopg2.connect(**DB_CONFIG)
+
+def save_password(site, username, password):
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT version();")
-    print(cur.fetchone())
-    cur.close()
-    conn.close()
-except Exception as e:
-    print("Error:", e)
+
+    try:
+        cur.execute(
+            "INSERT INTO passwords (site, username, password) VALUES (%s, %s, %s)",
+            (site, username, password)
+        )
+        conn.commit()
+        print("Saved successfully!")
+
+    except Exception as e:
+        conn.rollback()
+        print("Error:", e)
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+def main():
+    print("=== Password Saver ===")
+
+    site = input("Site: ")
+    username = input("Username: ")
+    password = input("Password: ")
+
+    save_password(site, username, password)
+
+
+if __name__ == "__main__":
+    main()
