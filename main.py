@@ -98,27 +98,79 @@ def list_passwords():
 
     console.print(table)
     conn.close()
+# ------------------ DELETE ------------------
+def delete_password():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, site, username FROM passwords")
+    rows = cur.fetchall()
+
+    table = Table(title="Select Entry To Delete")
+    table.add_column("ID")
+    table.add_column("Site")
+    table.add_column("Username")
+    for row in rows:
+        table.add_row(str(row[0]), row[1], row[2])
+    console.print(table)
+
+    entry_id = Prompt.ask("Enter ID to delete")
+    cur.execute("DELETE FROM passwords WHERE id = ?", (entry_id,))
+    conn.commit()
+    conn.close()
+    console.print("[red]✔ Entry deleted![/red]")
+
+
+# ------------------ EDIT ------------------
+def edit_password():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, site, username FROM passwords")
+    rows = cur.fetchall()
+
+    table = Table(title="Select Entry To Edit")
+    table.add_column("ID")
+    table.add_column("Site")
+    table.add_column("Username")
+    for row in rows:
+        table.add_row(str(row[0]), row[1], row[2])
+    console.print(table)
+
+    entry_id = Prompt.ask("Enter ID to edit")
+    new_site = Prompt.ask("New Site")
+    new_username = Prompt.ask("New Username")
+    new_password = Prompt.ask("New Password", password=True)
+    encrypted = encrypt_password(new_password)
+
+    cur.execute(
+        "UPDATE passwords SET site = ? username = ? password = ? WHERE id = ?",
+        (new_site, new_username, encrypted, entry_id)
+    )
+    conn.commit()
+    conn.close()
+    console.print("[yellow]✔ Entry updated![/yellow]")
+
 
 # ------------------ MENU ------------------
-
 def menu():
     while True:
         console.print("\n[bold cyan]=== PASSWORD MANAGER ===[/bold cyan]")
         console.print("1) Add password")
         console.print("2) List passwords")
-        console.print("3) Exit")
+        console.print("3) Delete password")
+        console.print("4) Edit password")
+        console.print("5) Exit")
 
-        choice = Prompt.ask("Choose", choices=["1", "2", "3"])
+        choice = Prompt.ask("Choose", choices=["1", "2", "3", "4", "5"])
 
         if choice == "1":
             add_password()
         elif choice == "2":
             list_passwords()
+        elif choice == "3":
+            delete_password()
+        elif choice == "4":
+            edit_password()
         else:
             break
 
-# ------------------ MAIN ------------------
-
-if __name__ == "__main__":
-    init_db()
     menu()
