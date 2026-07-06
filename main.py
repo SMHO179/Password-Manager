@@ -9,14 +9,14 @@ console = Console()
 DB_NAME = "vault.db"
 KEY_FILE = "secret.key"
 
-# ------------------ LOAD KEY ------------------
+#LOAD KEY
 
 def load_key():
     return open(KEY_FILE, "rb").read()
 
 fernet = Fernet(load_key())
 
-# ------------------ DB ------------------
+#DB
 
 def get_connection():
     return sqlite3.connect(DB_NAME)
@@ -38,7 +38,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# ------------------ ENCRYPT ------------------
+#ENCRYPT
 
 def encrypt_password(password: str) -> str:
     return fernet.encrypt(password.encode()).decode()
@@ -46,7 +46,7 @@ def encrypt_password(password: str) -> str:
 def decrypt_password(password: str) -> str:
     return fernet.decrypt(password.encode()).decode()
 
-# ------------------ ADD ------------------
+#ADD
 
 def add_password():
     site = Prompt.ask("Site")
@@ -68,7 +68,7 @@ def add_password():
 
     console.print("[green]✔ Saved encrypted password![/green]")
 
-# ------------------ LIST ------------------
+#LIST
 
 def list_passwords():
     conn = get_connection()
@@ -99,7 +99,7 @@ def list_passwords():
     console.print(table)
     conn.close()
 
-# ------------------ MENU ------------------
+#MENU
 
 def menu():
     while True:
@@ -117,7 +117,7 @@ def menu():
         else:
             break
 
-# ------------------ MAIN ------------------
+#MAIN
 
 if __name__ == "__main__":
     init_db()
