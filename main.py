@@ -77,20 +77,18 @@ def decrypt_password(password):
 
 def add_password():
     console.print(Panel("Add new credential", style=STYLE_PRIMARY))
+    console.print(f"[dim]Enter [b]b[/b] to go back[/dim]")
 
     site = Prompt.ask(f"[bold {STYLE_WARN}]Site[/bold {STYLE_WARN}]")
-    if not site.strip():
-        console.print(f"[{STYLE_ERROR}]Site cannot be empty[/{STYLE_ERROR}]")
+    if not site.strip() or site.strip().lower() == "b":
         return
 
     username = Prompt.ask(f"[bold {STYLE_WARN}]Username[/bold {STYLE_WARN}]")
-    if not username.strip():
-        console.print(f"[{STYLE_ERROR}]Username cannot be empty[/{STYLE_ERROR}]")
+    if not username.strip() or username.strip().lower() == "b":
         return
 
     password = Prompt.ask(f"[bold {STYLE_WARN}]Password[/bold {STYLE_WARN}]", password=True)
-    if not password.strip():
-        console.print(f"[{STYLE_ERROR}]Password cannot be empty[/{STYLE_ERROR}]")
+    if not password.strip() or password.strip().lower() == "b":
         return
 
     encrypted = encrypt_password(password)
@@ -113,24 +111,25 @@ def list_passwords():
 
     if not rows:
         console.print(Panel("Vault is empty", style=STYLE_WARN))
-        return
+    else:
+        table = Table(
+            title="Password Vault",
+            box=box.ROUNDED,
+            border_style=STYLE_PRIMARY,
+        )
 
-    table = Table(
-        title="Password Vault",
-        box=box.ROUNDED,
-        border_style=STYLE_PRIMARY,
-    )
+        table.add_column("ID", style=STYLE_PRIMARY)
+        table.add_column("Site", style=STYLE_SUCCESS)
+        table.add_column("Username", style=STYLE_WARN)
+        table.add_column("Password", style=STYLE_ERROR)
+        table.add_column("Created", style="magenta")
 
-    table.add_column("ID", style=STYLE_PRIMARY)
-    table.add_column("Site", style=STYLE_SUCCESS)
-    table.add_column("Username", style=STYLE_WARN)
-    table.add_column("Password", style=STYLE_ERROR)
-    table.add_column("Created", style="magenta")
+        for row in rows:
+            table.add_row(str(row[0]), row[1], row[2], "********", row[4])
 
-    for row in rows:
-        table.add_row(str(row[0]), row[1], row[2], "********", row[4])
+        console.print(table)
 
-    console.print(table)
+    Prompt.ask(f"[dim]Press Enter to go back[/dim]")
 
 
 def menu():
