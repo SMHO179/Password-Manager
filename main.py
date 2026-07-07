@@ -1,3 +1,4 @@
+import sys
 import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
@@ -15,6 +16,8 @@ console = Console()
 
 DB_NAME = Path("vault.db")
 KEY_FILE = Path("secret.key")
+
+VERSION = "1.0.0"
 
 STYLE_PRIMARY = "cyan"
 STYLE_SUCCESS = "green"
@@ -134,7 +137,7 @@ def menu():
     while True:
         console.print(
             Panel.fit(
-                f"[bold {STYLE_PRIMARY}]PASSWORD MANAGER[/bold {STYLE_PRIMARY}]\n\n"
+                f"[bold {STYLE_PRIMARY}]PASSWORD MANAGER[/bold {STYLE_PRIMARY}]  [dim]v{VERSION}[/dim]\n\n"
                 f"[{STYLE_SUCCESS}]1[/{STYLE_SUCCESS}] Add password\n"
                 f"[{STYLE_SUCCESS}]2[/{STYLE_SUCCESS}] List passwords\n"
                 f"[{STYLE_SUCCESS}]3[/{STYLE_SUCCESS}] Exit",
@@ -154,7 +157,17 @@ def menu():
                 break
 
 
+def print_version():
+    console.print(f"[bold {STYLE_PRIMARY}]Password Manager[/bold {STYLE_PRIMARY}] v{VERSION}")
+    console.print(f"[dim]{Path(__file__).resolve().parent / DB_NAME}[/dim]")
+    console.print(f"[dim]{Path(__file__).resolve().parent / KEY_FILE}[/dim]")
+
+
 if __name__ == "__main__":
+    if "--version" in sys.argv or "-v" in sys.argv:
+        print_version()
+        sys.exit(0)
+
     try:
         init_db()
         menu()
