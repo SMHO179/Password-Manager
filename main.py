@@ -10,6 +10,9 @@ from rich.prompt import Prompt
 from rich.table import Table
 from rich.panel import Panel
 from rich import box
+from rich.text import Text
+from rich.align import Align
+from rich.style import Style
 
 
 console = Console()
@@ -19,10 +22,16 @@ KEY_FILE = Path("secret.key")
 
 VERSION = "1.0.0"
 
-STYLE_PRIMARY = "cyan"
-STYLE_SUCCESS = "green"
-STYLE_WARN = "yellow"
-STYLE_ERROR = "red"
+C = {
+    "primary": "cyan",
+    "success": "green",
+    "warn": "yellow",
+    "error": "red",
+    "muted": "bright_black",
+    "accent": "magenta",
+    "header": "bold cyan",
+    "border": "cyan",
+}
 
 
 def load_or_create_key():
@@ -31,7 +40,7 @@ def load_or_create_key():
 
     key = Fernet.generate_key()
     KEY_FILE.write_bytes(key)
-    console.print(f"[{STYLE_SUCCESS}]✔ Encryption key generated[/{STYLE_SUCCESS}]")
+    console.print(f" [{C['success']}]✔[/] Encryption key generated")
     return key
 
 
@@ -72,22 +81,30 @@ def decrypt_password(password):
     try:
         return fernet.decrypt(password.encode()).decode()
     except InvalidToken:
-        return f"[{STYLE_ERROR}]DECRYPT ERROR: invalid token[/{STYLE_ERROR}]"
+        return ""
+
 
 
 def add_password():
-    console.print(Panel("Add new credential", style=STYLE_PRIMARY))
-    console.print(f"[dim]Enter [b]b[/b] to go back[/dim]")
+    console.print()
+    console.print(Panel(
+        "[bold]New Credential[/bold]",
+        subtitle="fill in the fields below",
+        subtitle_align="right",
+        border_style=C["border"],
+        padding=(1, 2),
+    ))
+    console.print(f" [{C['muted']}]type [b]b[/b] at any prompt to cancel[/]")
 
-    site = Prompt.ask(f"[bold {STYLE_WARN}]Site[/bold {STYLE_WARN}]")
+    site = Prompt.ask(f" [{C['warn']}]●[/] Site")
     if not site.strip() or site.strip().lower() == "b":
         return
 
-    username = Prompt.ask(f"[bold {STYLE_WARN}]Username[/bold {STYLE_WARN}]")
+    username = Prompt.ask(f" [{C['warn']}]●[/] Username")
     if not username.strip() or username.strip().lower() == "b":
         return
 
-    password = Prompt.ask(f"[bold {STYLE_WARN}]Password[/bold {STYLE_WARN}]", password=True)
+    password = Prompt.ask(f" [{C['warn']}]●[/] Password", password=True)
     if not password.strip() or password.strip().lower() == "b":
         return
 
@@ -99,52 +116,69 @@ def add_password():
             (site.strip(), username.strip(), encrypted),
         )
 
-    console.print(f"[bold {STYLE_SUCCESS}]✔ Password saved securely[/bold {STYLE_SUCCESS}]")
+    console.print(f" [{C['success']}]✔[/] [bold]Saved securely[/bold]")
 
 
 def list_passwords():
     with db() as conn:
         cur = conn.execute(
-            "SELECT id, site, username, password, created_at FROM passwords"
+            "SELECT id, site, username, password, created_at FROM passwords ORDER BY created_at DESC"
         )
         rows = cur.fetchall()
 
     if not rows:
-        console.print(Panel("Vault is empty", style=STYLE_WARN))
+        console.print()
+        console.print(Panel(
+            Align.center("[dim]No credentials yet[/dim]"),
+            border_style=C["warn"],
+            padding=(1, 2),
+        ))
     else:
         table = Table(
             title="Password Vault",
-            box=box.ROUNDED,
-            border_style=STYLE_PRIMARY,
+            title_style=C["header"],
+            caption=f"{len(rows)} credential{'s' if len(rows) != 1 else ''} stored",
+            caption_style=C["muted"],
+            box=box.SIMPLE,
+            border_style=C["muted"],
+            header_style=Style(bold=True, color=C["primary"]),
+            padding=(0, 1),
         )
 
-        table.add_column("ID", style=STYLE_PRIMARY)
-        table.add_column("Site", style=STYLE_SUCCESS)
-        table.add_column("Username", style=STYLE_WARN)
-        table.add_column("Password", style=STYLE_ERROR)
-        table.add_column("Created", style="magenta")
+        table.add_column("ID", style=C["muted"], width=4)
+        table.add_column("Site", style=C["success"], no_wrap=True)
+        table.add_column("Username", style=C["warn"], no_wrap=True)
+        table.add_column("Password", style=C["muted"])
+        table.add_column("Created", style=C["accent"], no_wrap=True)
 
         for row in rows:
-            table.add_row(str(row[0]), row[1], row[2], "********", row[4])
+            table.add_row(str(row[0]), row[1], row[2], "••••••••", row[4])
 
+        console.print()
         console.print(table)
 
-    Prompt.ask(f"[dim]Press Enter to go back[/dim]")
+    Prompt.ask(f" [{C['muted']}]press Enter to go back[/]")
 
 
 def menu():
     while True:
-        console.print(
-            Panel.fit(
-                f"[bold {STYLE_PRIMARY}]PASSWORD MANAGER[/bold {STYLE_PRIMARY}]  [dim]v{VERSION}[/dim]\n\n"
-                f"[{STYLE_SUCCESS}]1[/{STYLE_SUCCESS}] Add password\n"
-                f"[{STYLE_SUCCESS}]2[/{STYLE_SUCCESS}] List passwords\n"
-                f"[{STYLE_SUCCESS}]3[/{STYLE_SUCCESS}] Exit",
-                border_style=STYLE_PRIMARY,
-            )
-        )
+        console.print()
+        console.print(Panel(
+            Align.center(Text(
+                "PASSWORD MANAGER",
+                style=C["header"],
+            )),
+            subtitle=f"v{VERSION}",
+            subtitle_align="right",
+            border_style=C["border"],
+            padding=(1, 2),
+        ))
 
-        choice = Prompt.ask("Select", choices=["1", "2", "3"])
+        for key, label in [("1", "Add password"), ("2", "List passwords"), ("3", "Exit")]:
+            console.print(f"  [{C['success']}]{key}[/]    {label}")
+
+        console.print()
+        choice = Prompt.ask(f" [{C['primary']}]→[/] Select", choices=["1", "2", "3"])
 
         match choice:
             case "1":
@@ -152,14 +186,19 @@ def menu():
             case "2":
                 list_passwords()
             case "3":
-                console.print(f"[bold {STYLE_ERROR}]Goodbye[/bold {STYLE_ERROR}]")
+                console.print()
+                console.print(Panel(
+                    Align.center("[dim]Goodbye[/dim]"),
+                    border_style=C["muted"],
+                    padding=(1, 2),
+                ))
                 break
 
 
 def print_version():
-    console.print(f"[bold {STYLE_PRIMARY}]Password Manager[/bold {STYLE_PRIMARY}] v{VERSION}")
-    console.print(f"[dim]{Path(__file__).resolve().parent / DB_NAME}[/dim]")
-    console.print(f"[dim]{Path(__file__).resolve().parent / KEY_FILE}[/dim]")
+    console.print(f"Password Manager v{VERSION}")
+    console.print(f"  DB:  {Path(__file__).resolve().parent / DB_NAME}")
+    console.print(f"  Key: {Path(__file__).resolve().parent / KEY_FILE}")
 
 
 if __name__ == "__main__":
@@ -171,4 +210,4 @@ if __name__ == "__main__":
         init_db()
         menu()
     except KeyboardInterrupt:
-        console.print(f"\n[bold {STYLE_ERROR}]Goodbye[/bold {STYLE_ERROR}]")
+        console.print(f"\n [{C['muted']}]Goodbye[/]")
