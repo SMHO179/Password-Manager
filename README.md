@@ -91,16 +91,6 @@ Run the application:
 python main.py
 ```
 
-### Menu
-
-```text
-1. Add password
-2. List passwords
-3. Exit
-```
-
-
-
 ## Security
 
 * Passwords are **never stored as plaintext**
