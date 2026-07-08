@@ -19,7 +19,7 @@ console = Console()
 DB_NAME = Path("vault.db")
 KEY_FILE = Path("secret.key")
 
-VERSION = "1.0.0"
+VERSION = "1.2.1"
 
 C = {
     "primary": "cyan",
