@@ -52,8 +52,8 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 ├── secret.key        # Encryption key (keep safe!)
 ├── vault.db          # Password database
 ├── requirements.txt  # Python dependencies
-├── README.md         # Persian documentation
-├── README-EN.md      # English documentation
+├── README.md         # English documentation
+├── README-FA.md      # Persian documentation
 └── LICENSE
 ```
 
