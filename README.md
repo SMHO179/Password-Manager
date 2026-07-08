@@ -105,7 +105,7 @@ Keep your key file safe and backed up.
 
 
 
-## 🗄 Database Schema
+## Database Schema
 
 | Column     | Type      | Description               |
 | ---------- | --------- | ------------------------- |
