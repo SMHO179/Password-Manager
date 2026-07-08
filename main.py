@@ -1,420 +1,190 @@
-import sys
-import sqlite3
-from pathlib import Path
-from contextlib import contextmanager
+# 🔐 Password Manager
 
-from cryptography.fernet import Fernet, InvalidToken
+<p align="center">
 
-from rich.console import Console
-from rich.prompt import Prompt
-from rich.table import Table
-from rich.panel import Panel
-from rich import box
-from rich.text import Text
-from rich.align import Align
+![Python](https://img.shields.io/badge/Python-3.14%2B-blue?logo=python\&logoColor=white)
+![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite\&logoColor=white)
+![Encryption](https://img.shields.io/badge/Encryption-Fernet-orange)
+![CLI](https://img.shields.io/badge/Interface-CLI-purple)
+![License](https://img.shields.io/github/license/SMHO179/Password-Manager)
+![Last Commit](https://img.shields.io/github/last-commit/SMHO179/Password-Manager)
 
+</p>
 
-console = Console()
+A secure and lightweight **CLI password manager** written in Python.
 
-DB_NAME = Path("vault.db")
-KEY_FILE = Path("secret.key")
+Passwords are encrypted using **Fernet symmetric encryption** and stored locally in an **SQLite database**.
 
-VERSION = "1.2.1"
+No cloud. No external services. Your credentials stay on your machine.
 
-C = {
-    "primary": "cyan",
-    "success": "green",
-    "warn": "yellow",
-    "error": "red",
-    "muted": "bright_black",
-    "accent": "magenta",
-    "header": "bold cyan",
-    "border": "cyan",
-}
+---
 
+## ✨ Features
 
-def load_or_create_key():
-    if KEY_FILE.exists():
-        return KEY_FILE.read_bytes()
+* 🔒 Secure password encryption with Fernet
+* 💾 Local SQLite database storage
+* 🖥️ Interactive terminal UI powered by Rich
+* 🔑 Automatic encryption key generation
+* 🙈 Hidden password input
+* ✅ Input validation
+* 🔄 Safe database transactions with rollback on errors
+* 🛑 Graceful `Ctrl+C` handling
+* ↩️ Return to menu with `b`
+* ➕ Add passwords
+* 📋 List saved accounts
+* ✏️ Edit credentials
+* 🗑️ Delete credentials
+* 🌐 Fully offline operation
 
-    key = Fernet.generate_key()
-    KEY_FILE.write_bytes(key)
+---
 
-    console.print(
-        "[green]✔ Encryption key generated[/green]"
-    )
+## 🛠 Technologies
 
-    return key
+| Technology   | Purpose            |
+| ------------ | ------------------ |
+| Python 3.14+ | Main application   |
+| SQLite3      | Local database     |
+| cryptography | Fernet encryption  |
+| Rich         | Terminal interface |
 
+---
 
-fernet = Fernet(load_or_create_key())
+## 📂 Project Structure
 
+```text
+.
+├── main.py              # Main application
+├── generate_key.py      # Encryption key generator
+├── requirements.txt     # Python dependencies
+├── README.md            # English documentation
+├── README-FA.md         # Persian documentation
+├── CONTRIBUTING.md      # Contribution guide
+├── LICENSE              # License file
+├── .gitignore           # Git ignore rules
+│
+├── secret.key           # Generated encryption key
+└── vault.db             # Local password database
+```
 
-@contextmanager
-def db():
-    conn = sqlite3.connect(DB_NAME)
+> ⚠️ `secret.key` and `vault.db` should never be shared publicly.
 
-    try:
-        yield conn
-        conn.commit()
+---
 
-    except Exception:
-        conn.rollback()
-        raise
+## 🚀 Installation
 
-    finally:
-        conn.close()
+### Clone repository
 
+```bash
+git clone https://github.com/SMHO179/Password-Manager.git
 
-def init_db():
-    with db() as conn:
-        conn.execute("""
-        CREATE TABLE IF NOT EXISTS passwords(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            site TEXT NOT NULL,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """)
+cd Password-Manager
+```
 
+### Create virtual environment
 
-def encrypt_password(password):
-    return fernet.encrypt(
-        password.encode()
-    ).decode()
+```bash
+python -m venv .venv
+```
 
+Activate environment:
 
-def decrypt_password(password):
-    try:
-        return fernet.decrypt(
-            password.encode()
-        ).decode()
+Linux/macOS:
 
-    except InvalidToken:
-        return ""
+```bash
+source .venv/bin/activate
+```
 
+Windows:
 
-def ask_back(text, password=False):
-    value = Prompt.ask(
-        text,
-        password=password
-    )
-
-    if value.lower() == "b":
-        return None
-
-    return value
+```powershell
+.venv\Scripts\activate
+```
 
+Install dependencies:
 
-def pause():
-    Prompt.ask(
-        "\nPress Enter to return to menu",
-        default=""
-    )
+```bash
+pip install -r requirements.txt
+```
 
+---
 
-def add_password():
+## ▶️ Usage
 
-    console.print(
-        Panel(
-            "[bold]New Credential[/bold]",
-            border_style=C["border"]
-        )
-    )
+Run the application:
 
-    site = ask_back("Site")
-    if site is None:
-        return
+```bash
+python main.py
+```
 
-    username = ask_back("Username")
-    if username is None:
-        return
+Application menu:
 
-    password = ask_back(
-        "Password",
-        password=True
-    )
+```text
+1. Add password
+2. List passwords
+3. Delete password
+4. Edit password
+5. Exit
+```
 
-    if password is None:
-        return
+During input:
 
-    encrypted = encrypt_password(password)
+```text
+b
+```
 
-    with db() as conn:
-        conn.execute(
-            """
-            INSERT INTO passwords(
-                site,
-                username,
-                password
-            )
-            VALUES (?, ?, ?)
-            """,
-            (
-                site,
-                username,
-                encrypted
-            )
-        )
+returns to the previous menu.
 
-    console.print(
-        "[green]✔ Saved securely[/green]"
-    )
+---
 
-    pause()
+## 🔐 Security
 
+* Passwords are encrypted before being stored
+* Plain text passwords are never written to the database
+* Every installation has its own encryption key
+* The key file is required for decryption
+* Password input is hidden in terminal
+* Database operations use transactions with rollback support
 
-def list_passwords():
+⚠️ **Important:**
 
-    with db() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                id,
-                site,
-                username,
-                created_at
-            FROM passwords
-            ORDER BY id DESC
-            """
-        ).fetchall()
+If you lose `secret.key`, your encrypted passwords cannot be recovered.
 
+Make a secure backup of your key file.
 
-    if not rows:
-        console.print(
-            "[yellow]No passwords found[/yellow]"
-        )
+---
 
-        pause()
-        return
+## 🗄 Database Schema
 
+| Column     | Type      | Description             |
+| ---------- | --------- | ----------------------- |
+| id         | INTEGER   | Primary key             |
+| site       | TEXT      | Website or service name |
+| username   | TEXT      | Account username        |
+| password   | TEXT      | Encrypted password      |
+| created_at | TIMESTAMP | Creation timestamp      |
 
-    table = Table(
-        title="Password Vault",
-        box=box.SIMPLE,
-        border_style=C["border"]
-    )
+---
 
-    table.add_column("ID")
-    table.add_column("Site")
-    table.add_column("Username")
-    table.add_column("Created")
+## 🤝 Contributing
 
+Contributions are welcome.
 
-    for row in rows:
+Before contributing, please read:
 
-        table.add_row(
-            str(row[0]),
-            row[1],
-            row[2],
-            row[3]
-        )
+```text
+CONTRIBUTING.md
+```
 
+Suggested workflow:
 
-    console.print(table)
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Commit your work
+5. Open a Pull Request
 
-    pause()
+---
 
+## 📜 License
 
-def delete_password():
-
-    list_passwords()
-
-    entry_id = ask_back(
-        "ID to delete"
-    )
-
-    if entry_id is None:
-        return
-
-
-    with db() as conn:
-
-        result = conn.execute(
-            """
-            DELETE FROM passwords
-            WHERE id=?
-            """,
-            (entry_id,)
-        )
-
-
-    if result.rowcount:
-        console.print(
-            "[red]✔ Deleted[/red]"
-        )
-
-    else:
-        console.print(
-            "[yellow]ID not found[/yellow]"
-        )
-
-
-    pause()
-
-
-def edit_password():
-
-    list_passwords()
-
-    entry_id = ask_back(
-        "ID to edit"
-    )
-
-    if entry_id is None:
-        return
-
-
-    new_site = ask_back(
-        "New site"
-    )
-
-    if new_site is None:
-        return
-
-
-    new_username = ask_back(
-        "New username"
-    )
-
-    if new_username is None:
-        return
-
-
-    new_password = ask_back(
-        "New password",
-        password=True
-    )
-
-    if new_password is None:
-        return
-
-
-    encrypted = encrypt_password(
-        new_password
-    )
-
-
-    with db() as conn:
-
-        result = conn.execute(
-            """
-            UPDATE passwords
-            SET
-                site=?,
-                username=?,
-                password=?
-            WHERE id=?
-            """,
-            (
-                new_site,
-                new_username,
-                encrypted,
-                entry_id
-            )
-        )
-
-
-    if result.rowcount:
-        console.print(
-            "[yellow]✔ Updated[/yellow]"
-        )
-
-    else:
-        console.print(
-            "[red]ID not found[/red]"
-        )
-
-
-    pause()
-
-
-def menu():
-
-    while True:
-
-        console.print(
-            Panel(
-                Align.center(
-                    Text(
-                        "PASSWORD MANAGER",
-                        style=C["header"]
-                    )
-                ),
-                subtitle=f"v{VERSION}",
-                border_style=C["border"]
-            )
-        )
-
-
-        console.print("""
-[green]1[/] Add password
-[green]2[/] List passwords
-[green]3[/] Delete password
-[green]4[/] Edit password
-[green]5[/] Exit
-
-[dim]Type b anytime to return[/dim]
-        """)
-
-
-        choice = Prompt.ask(
-            "Select",
-            choices=[
-                "1",
-                "2",
-                "3",
-                "4",
-                "5"
-            ]
-        )
-
-
-        if choice == "1":
-            add_password()
-
-        elif choice == "2":
-            list_passwords()
-
-        elif choice == "3":
-            delete_password()
-
-        elif choice == "4":
-            edit_password()
-
-        elif choice == "5":
-            console.print(
-                "[cyan]Goodbye[/cyan]"
-            )
-
-            break
-
-
-
-def print_version():
-
-    console.print(
-        f"Password Manager v{VERSION}"
-    )
-
-
-
-if __name__ == "__main__":
-
-    if "--version" in sys.argv:
-        print_version()
-        sys.exit()
-
-
-    try:
-
-        init_db()
-        menu()
-
-
-    except KeyboardInterrupt:
-
-        console.print(
-            "\n[dim]Goodbye[/dim]"
-        )
+This project is licensed under the terms of the [LICENSE](LICENSE).
