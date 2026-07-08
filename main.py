@@ -40,7 +40,7 @@ def load_or_create_key():
 
     key = Fernet.generate_key()
     KEY_FILE.write_bytes(key)
-    console.print(f" [{C['success']}]✔[/] Encryption key generated")
+    console.print(f"[{C['success']}]✔ Encryption key generated[/]")
     return key
 
 
@@ -84,130 +84,157 @@ def decrypt_password(password):
         return ""
 
 
-
 def add_password():
-    console.print()
     console.print(Panel(
         "[bold]New Credential[/bold]",
-        subtitle="fill in the fields below",
-        subtitle_align="right",
-        border_style=C["border"],
-        padding=(1, 2),
+        border_style=C["border"]
     ))
-    console.print(f" [{C['muted']}]type [b]b[/b] at any prompt to cancel[/]")
 
-    site = Prompt.ask(f" [{C['warn']}]●[/] Site")
-    if not site.strip() or site.strip().lower() == "b":
-        return
-
-    username = Prompt.ask(f" [{C['warn']}]●[/] Username")
-    if not username.strip() or username.strip().lower() == "b":
-        return
-
-    password = Prompt.ask(f" [{C['warn']}]●[/] Password", password=True)
-    if not password.strip() or password.strip().lower() == "b":
-        return
+    site = Prompt.ask("Site")
+    username = Prompt.ask("Username")
+    password = Prompt.ask("Password", password=True)
 
     encrypted = encrypt_password(password)
 
     with db() as conn:
         conn.execute(
-            "INSERT INTO passwords (site, username, password) VALUES (?, ?, ?)",
-            (site.strip(), username.strip(), encrypted),
+            "INSERT INTO passwords(site, username, password) VALUES (?, ?, ?)",
+            (site, username, encrypted)
         )
 
-    console.print(f" [{C['success']}]✔[/] [bold]Saved securely[/bold]")
+    console.print("[green]✔ Saved securely[/green]")
 
 
 def list_passwords():
     with db() as conn:
-        cur = conn.execute(
-            "SELECT id, site, username, password, created_at FROM passwords ORDER BY created_at DESC"
-        )
-        rows = cur.fetchall()
+        rows = conn.execute(
+            "SELECT id, site, username, created_at FROM passwords ORDER BY id DESC"
+        ).fetchall()
 
     if not rows:
-        console.print()
-        console.print(Panel(
-            Align.center("[dim]No credentials yet[/dim]"),
-            border_style=C["warn"],
-            padding=(1, 2),
-        ))
-    else:
-        table = Table(
-            title="Password Vault",
-            title_style=C["header"],
-            caption=f"{len(rows)} credential{'s' if len(rows) != 1 else ''} stored",
-            caption_style=C["muted"],
-            box=box.SIMPLE,
-            border_style=C["muted"],
-            header_style=Style(bold=True, color=C["primary"]),
-            padding=(0, 1),
+        console.print("[yellow]No passwords found[/yellow]")
+        return
+
+    table = Table(
+        title="Password Vault",
+        box=box.SIMPLE,
+        border_style=C["border"]
+    )
+
+    table.add_column("ID")
+    table.add_column("Site")
+    table.add_column("Username")
+    table.add_column("Created")
+
+    for row in rows:
+        table.add_row(
+            str(row[0]),
+            row[1],
+            row[2],
+            row[3]
         )
 
-        table.add_column("ID", style=C["muted"], width=4)
-        table.add_column("Site", style=C["success"], no_wrap=True)
-        table.add_column("Username", style=C["warn"], no_wrap=True)
-        table.add_column("Password", style=C["muted"])
-        table.add_column("Created", style=C["accent"], no_wrap=True)
+    console.print(table)
 
-        for row in rows:
-            table.add_row(str(row[0]), row[1], row[2], "••••••••", row[4])
 
-        console.print()
-        console.print(table)
+def delete_password():
+    list_passwords()
 
-    Prompt.ask(f" [{C['muted']}]press Enter to go back[/]")
+    entry_id = Prompt.ask("ID to delete")
+
+    with db() as conn:
+        result = conn.execute(
+            "DELETE FROM passwords WHERE id=?",
+            (entry_id,)
+        )
+
+    console.print("[red]✔ Deleted[/red]")
+
+
+def edit_password():
+    list_passwords()
+
+    entry_id = Prompt.ask("ID to edit")
+
+    new_site = Prompt.ask("New site")
+    new_username = Prompt.ask("New username")
+    new_password = Prompt.ask("New password", password=True)
+
+    encrypted = encrypt_password(new_password)
+
+    with db() as conn:
+        conn.execute(
+            """
+            UPDATE passwords
+            SET site=?, username=?, password=?
+            WHERE id=?
+            """,
+            (
+                new_site,
+                new_username,
+                encrypted,
+                entry_id
+            )
+        )
+
+    console.print("[yellow]✔ Updated[/yellow]")
 
 
 def menu():
     while True:
-        console.print()
-        console.print(Panel(
-            Align.center(Text(
-                "PASSWORD MANAGER",
-                style=C["header"],
-            )),
-            subtitle=f"v{VERSION}",
-            subtitle_align="right",
-            border_style=C["border"],
-            padding=(1, 2),
-        ))
+        console.print(
+            Panel(
+                Align.center(
+                    Text("PASSWORD MANAGER", style=C["header"])
+                ),
+                subtitle=f"v{VERSION}",
+                border_style=C["border"]
+            )
+        )
 
-        for key, label in [("1", "Add password"), ("2", "List passwords"), ("3", "Exit")]:
-            console.print(f"  [{C['success']}]{key}[/]    {label}")
+        console.print("""
+[green]1[/] Add password
+[green]2[/] List passwords
+[green]3[/] Delete password
+[green]4[/] Edit password
+[green]5[/] Exit
+        """)
 
-        console.print()
-        choice = Prompt.ask(f" [{C['primary']}]→[/] Select", choices=["1", "2", "3"])
+        choice = Prompt.ask(
+            "Select",
+            choices=["1", "2", "3", "4", "5"]
+        )
 
-        match choice:
-            case "1":
-                add_password()
-            case "2":
-                list_passwords()
-            case "3":
-                console.print()
-                console.print(Panel(
-                    Align.center("[dim]Goodbye[/dim]"),
-                    border_style=C["muted"],
-                    padding=(1, 2),
-                ))
-                break
+        if choice == "1":
+            add_password()
+
+        elif choice == "2":
+            list_passwords()
+
+        elif choice == "3":
+            delete_password()
+
+        elif choice == "4":
+            edit_password()
+
+        elif choice == "5":
+            console.print("[cyan]Goodbye[/]")
+            break
 
 
 def print_version():
     console.print(f"Password Manager v{VERSION}")
-    console.print(f"  DB:  {Path(__file__).resolve().parent / DB_NAME}")
-    console.print(f"  Key: {Path(__file__).resolve().parent / KEY_FILE}")
 
 
 if __name__ == "__main__":
-    if "--version" in sys.argv or "-v" in sys.argv:
+
+    if "--version" in sys.argv:
         print_version()
-        sys.exit(0)
+        sys.exit()
 
     try:
         init_db()
         menu()
+
     except KeyboardInterrupt:
-        console.print(f"\n [{C['muted']}]Goodbye[/]")
+        console.print("\n[dim]Goodbye[/]")
