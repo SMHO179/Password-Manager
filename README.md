@@ -16,7 +16,7 @@ A secure and lightweight **CLI password manager** built with Python.
 
 Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stored locally in a **SQLite database**. No cloud, no tracking, and no external services.
 
----
+
 
 ## Features
 
@@ -30,7 +30,7 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 * Atomic database transactions with automatic rollback
 * Fully offline — your data stays on your machine
 
----
+
 
 ## Technologies
 
@@ -41,7 +41,7 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 | cryptography | Fernet encryption         |
 | Rich         | Terminal interface        |
 
----
+
 
 ## Project Structure
 
@@ -57,7 +57,7 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 └── LICENSE
 ```
 
----
+
 
 ## Installation
 
@@ -81,7 +81,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
----
+
 
 ## Usage
 
@@ -99,7 +99,7 @@ python main.py
 3. Exit
 ```
 
----
+
 
 ## Security
 
@@ -113,7 +113,7 @@ python main.py
 
 Keep your key file safe and backed up.
 
----
+
 
 ## 🗄 Database Schema
 
@@ -125,7 +125,7 @@ Keep your key file safe and backed up.
 | password   | TEXT      | Fernet encrypted password |
 | created_at | TIMESTAMP | Creation time             |
 
----
+
 
 ## Contributing
 
@@ -136,7 +136,7 @@ Contributions are welcome!
 3. Commit your changes
 4. Open a Pull Request
 
----
+
 
 ## License
 
