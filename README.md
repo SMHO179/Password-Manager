@@ -1,4 +1,4 @@
-# 🔐 Password Manager
+# Password Manager
 
 <p align="center">
 
@@ -18,21 +18,21 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 
 ---
 
-## ✨ Features
+## Features
 
-* 🔒 AES-256 encryption via Fernet
-* 💾 Local SQLite database storage
-* 🖥️ Beautiful interactive terminal UI powered by [Rich](https://github.com/Textualize/rich)
-* 🔑 Automatic encryption key generation
-* 🙈 Password masking during input
-* ✅ Input validation
-* 🛑 Graceful `Ctrl+C` handling
-* 🔄 Atomic database transactions with automatic rollback
-* 📦 Fully offline — your data stays on your machine
+* AES-256 encryption via Fernet
+* Local SQLite database storage
+* Beautiful interactive terminal UI powered by [Rich](https://github.com/Textualize/rich)
+* Automatic encryption key generation
+* Password masking during input
+* Input validation
+* Graceful `Ctrl+C` handling
+* Atomic database transactions with automatic rollback
+* Fully offline — your data stays on your machine
 
 ---
 
-## 🛠 Technologies
+## Technologies
 
 | Technology   | Purpose                   |
 | ------------ | ------------------------- |
@@ -43,7 +43,7 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 .
@@ -59,7 +59,7 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Clone repository
 
@@ -83,7 +83,7 @@ pip install -r requirements.txt
 
 ---
 
-## ▶️ Usage
+## Usage
 
 Run the application:
 
@@ -101,7 +101,7 @@ python main.py
 
 ---
 
-## 🔐 Security
+## Security
 
 * Passwords are **never stored as plaintext**
 * Every vault uses its own unique encryption key
@@ -109,7 +109,7 @@ python main.py
 * Password input is hidden while typing
 * Invalid empty inputs are rejected
 
-> ⚠️ Losing `secret.key` means your encrypted passwords cannot be recovered.
+> Losing `secret.key` means your encrypted passwords cannot be recovered.
 
 Keep your key file safe and backed up.
 
@@ -127,7 +127,7 @@ Keep your key file safe and backed up.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome!
 
@@ -138,6 +138,6 @@ Contributions are welcome!
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the terms of the [LICENSE](LICENSE).
