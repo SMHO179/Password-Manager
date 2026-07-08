@@ -81,15 +81,6 @@ pip install -r requirements.txt
 python main.py
 ```
 
-منوی برنامه:
-
-```text
-1. افزودن رمز عبور
-2. نمایش رمزهای عبور
-3. خروج
-```
-
-
 
 ## امنیت
 
