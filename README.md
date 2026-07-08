@@ -1,75 +1,42 @@
 # Password Manager
 
-این پروژه یک ابزار ساده خط فرمان (CLI) برای مدیریت امن رمزهای عبور است که با استفاده از پایتون ساخته شده است. رمزها به‌صورت رمزنگاری‌شده در دیتابیس SQLite ذخیره می‌شوند و هنگام نمایش، به‌صورت امن رمزگشایی می‌شوند.
+A secure CLI password manager built with Python. Passwords are encrypted with AES (Fernet) and stored in a local SQLite database.
 
+## Features
 
-## ویژگی‌ها
+- AES-256 encryption via Fernet (symmetric cryptography)
+- Local SQLite storage — no cloud, no network
+- Interactive terminal UI powered by Rich
+- Auto-generated encryption key on first run
+- Password masking during input
+- Input validation (empty fields rejected)
+- Graceful Ctrl+C handling
+- Atomic database transactions with auto-rollback on error
 
-* ذخیره امن رمزهای عبور با رمزنگاری AES (Fernet)
-* ذخیره اطلاعات در دیتابیس SQLite
-* رابط کاربری ساده و تعاملی در ترمینال با استفاده از Rich
-* نمایش جدول‌بندی شده رمزها
-* رمزنگاری و رمزگشایی خودکار پسوردها
-* ساختار سبک و قابل توسعه
+## Technologies
 
+- **Python 3.14+**
+- **SQLite3** — embedded database
+- **cryptography** — Fernet (AES-256-CBC with HMAC)
+- **rich** — terminal UI framework
 
-## تکنولوژی‌های استفاده شده
-
-* Python 3
-* SQLite3 (دیتابیس داخلی)
-* cryptography (Fernet encryption)
-* rich (رابط کاربری ترمینال)
-
-
-## ساختار پروژه
-
-* `vault.db` → دیتابیس ذخیره پسوردها
-* `secret.key` → کلید رمزنگاری Fernet
-* اسکریپت اصلی → مدیریت کامل رمزها
-
-
-## نحوه کار برنامه
-
-### 1. مقداردهی اولیه دیتابیس
-
-در اولین اجرا، جدول `passwords` ساخته می‌شود که شامل موارد زیر است:
-
-* سایت (site)
-* نام کاربری (username)
-* رمز عبور رمزنگاری‌شده (password)
-* زمان ایجاد (created_at)
-
-
-### 2. افزودن رمز عبور
-
-کاربر اطلاعات سایت، نام کاربری و پسورد را وارد می‌کند.
-پسورد قبل از ذخیره شدن با Fernet رمزنگاری می‌شود و سپس در دیتابیس ذخیره می‌گردد.
-
-
-### 3. مشاهده رمزها
-
-تمام رکوردها از دیتابیس خوانده می‌شوند و پسوردها در لحظه به‌صورت امن decrypt شده و در قالب جدول نمایش داده می‌شوند.
-
-
-### 4. منوی برنامه
-
-برنامه دارای منوی ساده است:
+## Project Structure
 
 ```
-1) Add password
-2) List passwords
-3) Exit
+.
+├── main.py           # Application entry point
+├── generate_key.py   # Standalone key generator (optional)
+├── secret.key        # Encryption key (auto-generated, keep safe!)
+├── vault.db          # SQLite password database
+├── requirements.txt  # Python dependencies
+├── README.md         # Persian documentation
+├── README-EN.md      # English documentation
+└── LICENSE
 ```
 
+## Usage
 
-## امنیت
-
-* رمزها در دیتابیس به‌صورت plaintext ذخیره نمی‌شوند
-* از کلید اختصاصی (`secret.key`) برای رمزنگاری استفاده می‌شود
-* بدون داشتن کلید، امکان بازیابی رمزها وجود ندارد
-
-
-## اجرا
+### 1. Setup
 
 ```bash
 python -m venv .venv
@@ -77,19 +44,46 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 2. Generate encryption key (optional — auto-generated on first run)
+
 ```bash
 python generate_key.py
 ```
+
+### 3. Run
 
 ```bash
 python main.py
 ```
 
+### Menu
 
-## نکته مهم
+```
+1. Add password
+2. List passwords
+3. Exit
+```
 
-در صورت حذف فایل `secret.key`، تمام رمزهای ذخیره‌شده غیرقابل بازیابی خواهند بود.
+## Security
 
-## لایسنس
+- **Passwords are never stored in plaintext** — encrypted before writing to disk
+- **Unique encryption key** — each vault gets its own `secret.key`
+- **Key is required for decryption** — without it, the vault is unrecoverable
+- **Input is masked** — passwords are hidden during entry
+- **Empty inputs rejected** — no silent failures
 
-[LICENSE](LICENSE)
+> **Warning:** Losing `secret.key` means permanent data loss. Back it up securely.
+
+## Database Schema
+
+| Column      | Type      | Description                |
+|-------------|-----------|----------------------------|
+| id          | INTEGER   | Primary key (auto-increment) |
+| site        | TEXT      | Website or service name    |
+| username    | TEXT      | Login username             |
+| password    | TEXT      | Fernet-encrypted password  |
+| created_at  | TIMESTAMP | Auto-generated insert time |
+
+## License
+
+See [LICENSE](LICENSE).
