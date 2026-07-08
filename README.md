@@ -16,7 +16,9 @@ A secure and lightweight **CLI password manager** built with Python.
 
 Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stored locally in a **SQLite database**. No cloud, no tracking, and no external services.
 
+## Demo
 
+![Project Demo](assets/menu.gif)
 
 ## Features
 
