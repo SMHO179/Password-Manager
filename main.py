@@ -2,9 +2,9 @@ import sys
 import sqlite3
 import string
 import random
+
 from pathlib import Path
 from contextlib import contextmanager
-
 from cryptography.fernet import Fernet, InvalidToken
 
 from rich.console import Console
@@ -34,6 +34,38 @@ C = {
     "border": "cyan",
 }
 
+def check_password_strength(password: str):
+    score = 0
+
+    if len(password) >= 8:
+        score += 1
+
+    if len(password) >= 12:
+        score += 1
+
+    if any(c.islower() for c in password):
+        score += 1
+
+    if any(c.isupper() for c in password):
+        score += 1
+
+    if any(c.isdigit() for c in password):
+        score += 1
+
+    if any(c in string.punctuation for c in password):
+        score += 1
+
+    if score <= 2:
+        return "Weak", "red"
+
+    elif score <= 4:
+        return "Medium", "yellow"
+
+    elif score == 5:
+        return "Strong", "green"
+
+    else:
+        return "Very Strong", "bright_green"
 
 def load_or_create_key():
     if KEY_FILE.exists():
@@ -182,7 +214,12 @@ def add_password():
         "Password",
         password=True
     )
-
+    
+    strength, color = check_password_strength(password)
+    
+    console.print(
+        f"Password strength: [{color}]{strength}[/{color}]"
+    )
     if password is None:
         return
 
