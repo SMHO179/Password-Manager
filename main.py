@@ -1,5 +1,7 @@
 import sys
 import sqlite3
+import string
+import random
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -19,7 +21,7 @@ console = Console()
 DB_NAME = Path("vault.db")
 KEY_FILE = Path("secret.key")
 
-VERSION = "1.2.2"
+VERSION = "1.3.0"
 
 C = {
     "primary": "cyan",
@@ -105,6 +107,51 @@ def ask_back(text, password=False):
         return None
 
     return value
+
+
+def generate_password():
+    console.print(
+        Panel(
+            "[bold]Password Generator[/bold]",
+            border_style=C["border"]
+        )
+    )
+
+    length = Prompt.ask(
+        "Length",
+        default="16"
+    )
+
+    try:
+        length = int(length)
+    except ValueError:
+        length = 16
+
+    if length < 4:
+        length = 4
+
+    chars = string.ascii_letters + string.digits + string.punctuation
+    password = "".join(random.choice(chars) for _ in range(length))
+
+    console.print(
+        f"\nGenerated password:\n[bold cyan]{password}[/bold cyan]"
+    )
+
+    copy = Prompt.ask(
+        "Copy to clipboard?",
+        choices=["y", "n"],
+        default="y"
+    )
+
+    if copy.lower() == "y":
+        try:
+            import pyperclip
+            pyperclip.copy(password)
+            console.print("[green]✔ Copied to clipboard[/green]")
+        except ImportError:
+            console.print("[yellow]pyperclip not installed. Select and copy manually.[/yellow]")
+
+    pause()
 
 
 def pause():
@@ -353,7 +400,8 @@ def menu():
 [green]2[/] List passwords
 [green]3[/] Delete password
 [green]4[/] Edit password
-[green]5[/] Exit
+[green]5[/] Generate password
+[green]6[/] Exit
 
 [dim]Type b anytime to return[/dim]
         """)
@@ -366,7 +414,8 @@ def menu():
                 "2",
                 "3",
                 "4",
-                "5"
+                "5",
+                "6"
             ]
         )
 
@@ -384,6 +433,9 @@ def menu():
             edit_password()
 
         elif choice == "5":
+            generate_password()
+
+        elif choice == "6":
             console.print(
                 "[cyan]Goodbye[/cyan]"
             )
