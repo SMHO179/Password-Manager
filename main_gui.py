@@ -1,64 +1,45 @@
 """Password Manager — GUI version built with PyQt6."""
 
-import os
-import random
-import sqlite3
-import stat
-import string
 import sys
-from collections.abc import Generator
-from contextlib import contextmanager
-from pathlib import Path
 
-from cryptography.fernet import Fernet, InvalidToken
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QIcon, QFont, QColor, QPalette
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QTableWidget, QTableWidgetItem,
-    QHeaderView, QDialog, QFormLayout, QSpinBox, QMessageBox,
-    QStackedWidget, QFrame, QSpacerItem, QSizePolicy, QAbstractItemView,
-    QStatusBar, QToolBar, QCheckBox
+    QAbstractItemView,
+    QApplication,
+    QCheckBox,
+    QDialog,
+    QFormLayout,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QStackedWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
-# ── Constants ────────────────────────────────────────────────────────────────
+from app.config import VERSION, KEY_FILE
+from app.crypto.key_manager import load_or_create_key
+from app.crypto.encryption import init_fernet
+from app.database.connection import init_db
+from app.database.repository import Repository
+from app.services.password_service import PasswordService
+from app.services.password_generator import generate_password
+from app.utils.password_strength import check_password_strength_gui
 
-VERSION = "1.3.0"
-DB_NAME = Path("vault.db")
-KEY_FILE = Path("secret.key")
+# ── Initialised in main() ────────────────────────────────────────────────
 
-# ── SQL Queries ──────────────────────────────────────────────────────────────
+service: PasswordService
 
-SQL_CREATE_TABLE = """\
-CREATE TABLE IF NOT EXISTS passwords(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    site TEXT NOT NULL,
-    username TEXT NOT NULL,
-    password TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-"""
-
-SQL_INSERT_PASSWORD = """\
-INSERT INTO passwords(site, username, password)
-VALUES (?, ?, ?)
-"""
-
-SQL_SELECT_PASSWORDS = """\
-SELECT id, site, username, created_at
-FROM passwords
-ORDER BY id DESC
-"""
-
-SQL_DELETE_PASSWORD = "DELETE FROM passwords WHERE id = ?"
-
-SQL_UPDATE_PASSWORD = """\
-UPDATE passwords
-SET site = ?, username = ?, password = ?
-WHERE id = ?
-"""
-
-# ── Stylesheet ───────────────────────────────────────────────────────────────
+# ── Stylesheet ───────────────────────────────────────────────────────────
 
 STYLESHEET = """
 QMainWindow {
@@ -288,91 +269,13 @@ QLabel#infoLabel {
 }
 """
 
-# ── Encryption key ───────────────────────────────────────────────────────────
 
-fernet: Fernet  # assigned in the __main__ block
-
-
-# ── Utilities ────────────────────────────────────────────────────────────────
-
-
-def check_password_strength(password: str) -> tuple[str, str, str]:
-    """Return a (label, colour, stylesheet_id) pair describing password strength."""
-    score = 0
-    if len(password) >= 8:
-        score += 1
-    if len(password) >= 12:
-        score += 1
-    if any(c.islower() for c in password):
-        score += 1
-    if any(c.isupper() for c in password):
-        score += 1
-    if any(c.isdigit() for c in password):
-        score += 1
-    if any(c in string.punctuation for c in password):
-        score += 1
-
-    if score <= 2:
-        return "Weak", "#f38ba8", "strengthWeak"
-    if score <= 4:
-        return "Medium", "#f9e2af", "strengthMedium"
-    if score == 5:
-        return "Strong", "#a6e3a1", "strengthStrong"
-    return "Very Strong", "#94e2d5", "strengthVeryStrong"
-
-
-# ── Database ─────────────────────────────────────────────────────────────────
-
-
-@contextmanager
-def db() -> Generator[sqlite3.Connection, None, None]:
-    """Context manager for a SQLite connection with auto-commit/rollback."""
-    conn = sqlite3.connect(str(DB_NAME))
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
-
-
-def init_db() -> None:
-    """Create the passwords table if it does not exist."""
-    with db() as conn:
-        conn.execute(SQL_CREATE_TABLE)
-
-
-# ── Encryption ───────────────────────────────────────────────────────────────
-
-
-def load_or_create_key() -> bytes:
-    """Load the existing key file or generate a new one."""
-    if KEY_FILE.exists():
-        return KEY_FILE.read_bytes()
-    key = Fernet.generate_key()
-    KEY_FILE.write_bytes(key)
-    return key
-
-
-def encrypt_password(password: str) -> str:
-    """Encrypt a plaintext password and return the token as a string."""
-    return fernet.encrypt(password.encode()).decode()
-
-
-def decrypt_password(password: str) -> str:
-    """Decrypt a token back to plaintext; return empty string on failure."""
-    try:
-        return fernet.decrypt(password.encode()).decode()
-    except InvalidToken:
-        return ""
-
-
-# ── Sidebar Button ───────────────────────────────────────────────────────────
+# ── Sidebar Button ───────────────────────────────────────────────────────
 
 
 class SidebarButton(QPushButton):
+    """A checkable sidebar navigation button with custom styling."""
+
     def __init__(self, text: str, parent=None):
         super().__init__(text, parent)
         self.setObjectName("sidebarBtn")
@@ -381,12 +284,15 @@ class SidebarButton(QPushButton):
         self.setFixedHeight(45)
 
 
-# ── Add Password Widget ──────────────────────────────────────────────────────
+# ── Add Password Widget ─────────────────────────────────────────────────
 
 
 class AddPasswordWidget(QWidget):
-    def __init__(self, status_callback=None, parent=None):
+    """Widget for adding a new credential."""
+
+    def __init__(self, svc: PasswordService, status_callback=None, parent=None):
         super().__init__(parent)
+        self.service = svc
         self.status_callback = status_callback
         self.setup_ui()
 
@@ -460,7 +366,7 @@ class AddPasswordWidget(QWidget):
             self.strength_label.setText("")
             self.strength_label.setObjectName("infoLabel")
             return
-        label, color, style_id = check_password_strength(text)
+        label, color, style_id = check_password_strength_gui(text)
         self.strength_label.setText(f"Strength: {label}")
         self.strength_label.setObjectName(style_id)
         self.strength_label.style().unpolish(self.strength_label)
@@ -476,9 +382,7 @@ class AddPasswordWidget(QWidget):
                                 "All fields are required.")
             return
 
-        encrypted = encrypt_password(password)
-        with db() as conn:
-            conn.execute(SQL_INSERT_PASSWORD, (site, username, encrypted))
+        self.service.add(site, username, password)
 
         self.clear_form()
         if self.status_callback:
@@ -491,12 +395,15 @@ class AddPasswordWidget(QWidget):
         self.strength_label.setText("")
 
 
-# ── Password List Widget ─────────────────────────────────────────────────────
+# ── Password List Widget ─────────────────────────────────────────────────
 
 
 class PasswordListWidget(QWidget):
-    def __init__(self, status_callback=None, parent=None):
+    """Widget for viewing, editing, and deleting stored credentials."""
+
+    def __init__(self, svc: PasswordService, status_callback=None, parent=None):
         super().__init__(parent)
+        self.service = svc
         self.status_callback = status_callback
         self.setup_ui()
         self.load_passwords()
@@ -574,8 +481,7 @@ class PasswordListWidget(QWidget):
         layout.addLayout(btn_layout)
 
     def load_passwords(self):
-        with db() as conn:
-            rows = conn.execute(SQL_SELECT_PASSWORDS).fetchall()
+        rows = self.service.list_all()
 
         self.table.setRowCount(len(rows))
         for i, row in enumerate(rows):
@@ -601,17 +507,12 @@ class PasswordListWidget(QWidget):
                                     "Please select a password to view.")
             return
 
-        with db() as conn:
-            row = conn.execute(
-                "SELECT site, username, password FROM passwords WHERE id = ?",
-                (entry_id,)
-            ).fetchone()
-
-        if row:
-            decrypted = decrypt_password(row[2])
+        details = self.service.get_details(entry_id)
+        if details:
+            site, username, decrypted = details
             QMessageBox.information(
                 self, "Password Details",
-                f"Site: {row[0]}\nUsername: {row[1]}\nPassword: {decrypted}"
+                f"Site: {site}\nUsername: {username}\nPassword: {decrypted}"
             )
 
     def edit_password(self):
@@ -621,15 +522,11 @@ class PasswordListWidget(QWidget):
                                     "Please select a password to edit.")
             return
 
-        with db() as conn:
-            row = conn.execute(
-                "SELECT site, username, password FROM passwords WHERE id = ?",
-                (entry_id,)
-            ).fetchone()
-
-        if row:
+        details = self.service.get_details(entry_id)
+        if details:
+            site, username, decrypted = details
             dialog = EditPasswordDialog(
-                entry_id, row[0], row[1], decrypt_password(row[2]), self
+                entry_id, site, username, decrypted, self.service, self
             )
             if dialog.exec():
                 self.load_passwords()
@@ -651,21 +548,23 @@ class PasswordListWidget(QWidget):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
-            with db() as conn:
-                conn.execute(SQL_DELETE_PASSWORD, (entry_id,))
+            self.service.delete(entry_id)
             self.load_passwords()
             if self.status_callback:
                 self.status_callback("Password deleted")
 
 
-# ── Edit Password Dialog ─────────────────────────────────────────────────────
+# ── Edit Password Dialog ─────────────────────────────────────────────────
 
 
 class EditPasswordDialog(QDialog):
+    """Dialog for editing an existing credential."""
+
     def __init__(self, entry_id: int, site: str, username: str,
-                 password: str, parent=None):
+                 password: str, svc: PasswordService, parent=None):
         super().__init__(parent)
         self.entry_id = entry_id
+        self.service = svc
         self.setWindowTitle("Edit Password")
         self.setMinimumWidth(400)
         self.setup_ui(site, username, password)
@@ -726,7 +625,7 @@ class EditPasswordDialog(QDialog):
             self.strength_label.setText("")
             self.strength_label.setObjectName("infoLabel")
             return
-        label, color, style_id = check_password_strength(text)
+        label, color, style_id = check_password_strength_gui(text)
         self.strength_label.setText(f"Strength: {label}")
         self.strength_label.setObjectName(style_id)
         self.strength_label.style().unpolish(self.strength_label)
@@ -742,18 +641,16 @@ class EditPasswordDialog(QDialog):
                                 "All fields are required.")
             return
 
-        encrypted = encrypt_password(password)
-        with db() as conn:
-            conn.execute(
-                SQL_UPDATE_PASSWORD, (site, username, encrypted, self.entry_id)
-            )
+        self.service.update(self.entry_id, site, username, password)
         self.accept()
 
 
-# ── Password Generator Widget ───────────────────────────────────────────────
+# ── Password Generator Widget ───────────────────────────────────────────
 
 
 class PasswordGeneratorWidget(QWidget):
+    """Widget for generating cryptographically secure passwords."""
+
     def __init__(self, status_callback=None, parent=None):
         super().__init__(parent)
         self.status_callback = status_callback
@@ -826,11 +723,10 @@ class PasswordGeneratorWidget(QWidget):
 
     def generate_password(self):
         length = self.length_spin.value()
-        chars = string.ascii_letters + string.digits + string.punctuation
-        password = "".join(random.choice(chars) for _ in range(length))
+        password = generate_password(length)
         self.password_display.setText(password)
 
-        label, color, style_id = check_password_strength(password)
+        label, color, style_id = check_password_strength_gui(password)
         self.strength_label.setText(f"Strength: {label}")
         self.strength_label.setObjectName(style_id)
         self.strength_label.style().unpolish(self.strength_label)
@@ -848,12 +744,15 @@ class PasswordGeneratorWidget(QWidget):
                 self.status_callback("Password copied to clipboard")
 
 
-# ── Main Window ──────────────────────────────────────────────────────────────
+# ── Main Window ──────────────────────────────────────────────────────────
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    """Main application window with sidebar navigation."""
+
+    def __init__(self, svc: PasswordService):
         super().__init__()
+        self.service = svc
         self.setWindowTitle(f"Password Manager v{VERSION}")
         self.setMinimumSize(900, 600)
         self.setup_ui()
@@ -911,10 +810,10 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
 
         self.add_widget = AddPasswordWidget(
-            status_callback=self.show_status, parent=self
+            self.service, status_callback=self.show_status, parent=self
         )
         self.list_widget = PasswordListWidget(
-            status_callback=self.show_status, parent=self
+            self.service, status_callback=self.show_status, parent=self
         )
         self.generator_widget = PasswordGeneratorWidget(
             status_callback=self.show_status, parent=self
@@ -940,7 +839,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(message, 5000)
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+# ── Main ─────────────────────────────────────────────────────────────────
 
 
 def main():
@@ -950,11 +849,15 @@ def main():
     font = QFont("Segoe UI", 10)
     app.setFont(font)
 
-    global fernet
-    fernet = Fernet(load_or_create_key())
+    global service
+    key = load_or_create_key()
+    init_fernet(key)
     init_db()
 
-    window = MainWindow()
+    repo = Repository()
+    service = PasswordService(repo)
+
+    window = MainWindow(service)
     window.show()
 
     sys.exit(app.exec())
