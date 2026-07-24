@@ -43,24 +43,6 @@ Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stor
 | cryptography | Fernet encryption         |
 | Rich         | Terminal interface        |
 
-
-
-## Project Structure
-
-```text
-.
-├── main.py           # Application entry point
-├── generate_key.py   # Encryption key generator
-├── secret.key        # Encryption key (keep safe!)
-├── vault.db          # Password database
-├── requirements.txt  # Python dependencies
-├── README.md         # English documentation
-├── README-FA.md      # Persian documentation
-└── LICENSE
-```
-
-
-
 ## Installation
 
 ### Clone repository
