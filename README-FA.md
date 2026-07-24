@@ -32,23 +32,6 @@
 | Rich         | رابط کاربری ترمینال      |
 
 
-
-## ساختار پروژه
-
-```text
-.
-├── main.py
-├── generate_key.py
-├── secret.key
-├── vault.db
-├── requirements.txt
-├── README.md
-├── README-FA.md
-└── LICENSE
-```
-
-
-
 ## نصب
 
 ### دریافت پروژه
