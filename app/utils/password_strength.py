@@ -6,17 +6,35 @@ import string
 def _calculate_score(password: str) -> int:
     """Calculate a password strength score (0-6)."""
     score = 0
-    if len(password) >= 8:
+    length = len(password)
+    if length >= 8:
         score += 1
-    if len(password) >= 12:
+    if length >= 12:
         score += 1
-    if any(c.islower() for c in password):
+
+    has_lower = False
+    has_upper = False
+    has_digit = False
+    has_punct = False
+    for c in password:
+        if not has_lower and c.islower():
+            has_lower = True
+        elif not has_upper and c.isupper():
+            has_upper = True
+        elif not has_digit and c.isdigit():
+            has_digit = True
+        elif not has_punct and c in string.punctuation:
+            has_punct = True
+        if has_lower and has_upper and has_digit and has_punct:
+            break
+
+    if has_lower:
         score += 1
-    if any(c.isupper() for c in password):
+    if has_upper:
         score += 1
-    if any(c.isdigit() for c in password):
+    if has_digit:
         score += 1
-    if any(c in string.punctuation for c in password):
+    if has_punct:
         score += 1
     return score
 

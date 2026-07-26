@@ -3,10 +3,11 @@
 import secrets
 import string
 
+_CHARS = string.ascii_letters + string.digits + string.punctuation
+
 
 def generate_password(length: int = 16) -> str:
     """Generate a cryptographically secure random password."""
     if length < 4:
         length = 4
-    chars = string.ascii_letters + string.digits + string.punctuation
-    return "".join(secrets.choice(chars) for _ in range(length))
+    return "".join(secrets.choice(_CHARS) for _ in range(length))

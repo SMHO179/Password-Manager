@@ -7,19 +7,23 @@ from contextlib import contextmanager
 from app.config import DB_NAME
 from app.database.queries import SQL_CREATE_TABLE
 
+_conn: sqlite3.Connection | None = None
+
 
 @contextmanager
 def db() -> Generator[sqlite3.Connection, None, None]:
-    """Context manager for a SQLite connection with auto-commit/rollback."""
-    conn = sqlite3.connect(str(DB_NAME))
+    """Context manager for a persistent SQLite connection with auto-commit/rollback."""
+    global _conn
+    if _conn is None:
+        _conn = sqlite3.connect(str(DB_NAME))
+        _conn.execute("PRAGMA journal_mode=WAL")
+        _conn.execute("PRAGMA synchronous=NORMAL")
     try:
-        yield conn
-        conn.commit()
+        yield _conn
+        _conn.commit()
     except Exception:
-        conn.rollback()
+        _conn.rollback()
         raise
-    finally:
-        conn.close()
 
 
 def init_db() -> None:
