@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-VERSION = "1.3.0"
+VERSION = "1.5.0"
 DB_NAME = Path("vault.db")
 KEY_FILE = Path("secret.key")
 
