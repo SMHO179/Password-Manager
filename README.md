@@ -1,4 +1,16 @@
 # Password Manager
+![Stars](https://img.shields.io/github/stars/SMHO179/Password-Manager?style=flat)
+![Forks](https://img.shields.io/github/forks/SMHO179/Password-Manager?style=flat)
+![Issues](https://img.shields.io/github/issues/SMHO179/Password-Manager?style=flat)
+![License](https://img.shields.io/github/license/SMHO179/Password-Manager?style=flat)
+![Last Commit](https://img.shields.io/github/last-commit/SMHO179/Password-Manager?style=flat)
+![Repo Size](https://img.shields.io/github/repo-size/SMHO179/Password-Manager?style=flat)
+![Top Language](https://img.shields.io/github/languages/top/SMHO179/Password-Manager?style=flat)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat&logo=python)
+![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=flat&logo=sqlite)
+![PyQt6](https://img.shields.io/badge/PyQt6-GUI-41CD52?style=flat&logo=qt)
+![Rich](https://img.shields.io/badge/Rich-CLI-black?style=flat)
+![Fernet](https://img.shields.io/badge/Encryption-Fernet-success?style=flat)
 
 A CLI and GUI password manager for securely storing and managing credentials with end-to-end encryption.
 
