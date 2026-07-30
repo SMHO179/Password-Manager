@@ -2,19 +2,23 @@
 
 A CLI and GUI password manager for securely storing and managing credentials with end-to-end encryption.
 
+## Demo
+
+![Demo](assets/menu.gif)
+
 ## Features
 
-- **Encrypted storage** — All passwords are encrypted with Fernet (AES-128-CBC) before being persisted to a local SQLite database.
-- **Password generation** — Generates cryptographically secure random passwords of configurable length.
+- **Encrypted storage** — Passwords are encrypted with Fernet before being persisted to a local SQLite database.
+- **Password generation** — Produces cryptographically secure random passwords of configurable length.
 - **Strength checker** — Rates password strength (Weak, Medium, Strong, Very Strong) in real time.
-- **Clipboard integration** — One-click copy to system clipboard via `pyperclip`.
-- **Dual interface** — Terminal-based CLI with `rich` UI and a native PyQt6 GUI.
-- **CRUD operations** — Add, list, edit, and delete credentials from the vault.
+- **Clipboard support** — Copies generated passwords to the system clipboard.
+- **Dual interface** — Terminal CLI with a `rich` UI, plus a native PyQt6 GUI.
+- **Full CRUD** — Add, list, edit, and delete credentials from the vault.
 
 ## Requirements
 
 - Python 3.10+
-- [SQLite3](https://www.sqlite.org/index.html) (bundled with Python)
+- SQLite3 (bundled with Python)
 
 ## Installation
 
@@ -28,7 +32,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For the GUI version:
+For the GUI version, also install `PyQt6`:
 
 ```bash
 pip install -r requirements-gui.txt
@@ -36,27 +40,26 @@ pip install -r requirements-gui.txt
 
 ## Usage
 
-### CLI
-
-Run the interactive menu:
+Start the CLI:
 
 ```bash
 python main.py
 ```
 
-Available options:
+The encryption key is created automatically on first run. To regenerate the key, use:
+
+```bash
+python generate_key.py
+```
+
+The interactive menu lets you:
+
 1. Add a new credential
 2. List all stored credentials
 3. Delete a credential by ID
 4. Edit an existing credential
 5. Generate a secure password
 6. Exit
-
-### Generate encryption key (first run only)
-
-```bash
-python generate_key.py
-```
 
 ### GUI
 
@@ -87,20 +90,20 @@ Password-Manager/
 
 Settings are defined in `app/config.py`:
 
-| Constant   | Purpose                          |
-|------------|----------------------------------|
-| `VERSION`  | Application version              |
-| `DB_NAME`  | SQLite database file path        |
-| `KEY_FILE` | Encryption key file path         |
-| `STYLE`    | Rich terminal colour theme       |
+| Constant   | Purpose                        |
+|------------|--------------------------------|
+| `VERSION`  | Application version           |
+| `DB_NAME`  | SQLite database file path     |
+| `KEY_FILE` | Encryption key file path      |
+| `STYLE`    | Rich terminal colour theme    |
 
-Edit these values directly in that file.
+Edit this file to adjust defaults.
 
 ## Security Notes
 
 - The encryption key (`secret.key`) is stored in the working directory. **Back it up securely** — losing it makes stored passwords irrecoverable.
 - Add `secret.key` and `vault.db` to `.gitignore` before sharing the repository.
-- The key file permissions are set to `0600` on Unix systems automatically.
+- Key file permissions are set to `0600` on Unix automatically.
 
 ## License
 
