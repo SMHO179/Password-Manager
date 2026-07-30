@@ -1,117 +1,107 @@
 # Password Manager
 
-<p align="center">
-
-![Python](https://img.shields.io/badge/Python-3.14%2B-blue?logo=python\&logoColor=white)
-![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite\&logoColor=white)
-![Cryptography](https://img.shields.io/badge/Encryption-Fernet%20AES--256-orange)
-![Rich](https://img.shields.io/badge/UI-Rich%20CLI-purple)
-![License](https://img.shields.io/github/license/SMHO179/Password-Manager?color=green)
-![Last Commit](https://img.shields.io/github/last-commit/SMHO179/Password-Manager)
-![Repo Size](https://img.shields.io/github/repo-size/SMHO179/Password-Manager)
-
-</p>
-
-A secure and lightweight **CLI password manager** built with Python.
-
-Passwords are encrypted using **Fernet symmetric encryption (AES-256)** and stored locally in a **SQLite database**. No cloud, no tracking, and no external services.
-
-## Demo
-
-![Project Demo](assets/menu.gif)
+A CLI and GUI password manager for securely storing and managing credentials with end-to-end encryption.
 
 ## Features
 
-* AES-256 encryption via Fernet
-* Local SQLite database storage
-* Beautiful interactive terminal UI powered by [Rich](https://github.com/Textualize/rich)
-* Automatic encryption key generation
-* Password masking during input
-* Input validation
-* Graceful `Ctrl+C` handling
-* Atomic database transactions with automatic rollback
-* Fully offline — your data stays on your machine
+- **Encrypted storage** — All passwords are encrypted with Fernet (AES-128-CBC) before being persisted to a local SQLite database.
+- **Password generation** — Generates cryptographically secure random passwords of configurable length.
+- **Strength checker** — Rates password strength (Weak, Medium, Strong, Very Strong) in real time.
+- **Clipboard integration** — One-click copy to system clipboard via `pyperclip`.
+- **Dual interface** — Terminal-based CLI with `rich` UI and a native PyQt6 GUI.
+- **CRUD operations** — Add, list, edit, and delete credentials from the vault.
 
+## Requirements
 
-
-## Technologies
-
-| Technology   | Purpose                   |
-| ------------ | ------------------------- |
-| Python 3.14+ | Main programming language |
-| SQLite3      | Local embedded database   |
-| cryptography | Fernet encryption         |
-| Rich         | Terminal interface        |
+- Python 3.10+
+- [SQLite3](https://www.sqlite.org/index.html) (bundled with Python)
 
 ## Installation
 
-### Clone repository
+Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/SMHO179/Password-Manager.git
-cd Password-Manager
-```
-
-### Create virtual environment
-
-```bash
+git clone https://github.com/SMohammad-Molanezhad/password-manager.git
+cd password-manager
 python -m venv .venv
 source .venv/bin/activate
-```
-
-### Install dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
+For the GUI version:
 
+```bash
+pip install -r requirements-gui.txt
+```
 
 ## Usage
 
-Run the application:
+### CLI
+
+Run the interactive menu:
 
 ```bash
 python main.py
 ```
 
-## Security
+Available options:
+1. Add a new credential
+2. List all stored credentials
+3. Delete a credential by ID
+4. Edit an existing credential
+5. Generate a secure password
+6. Exit
 
-* Passwords are **never stored as plaintext**
-* Every vault uses its own unique encryption key
-* The encryption key is required to decrypt stored passwords
-* Password input is hidden while typing
-* Invalid empty inputs are rejected
+### Generate encryption key (first run only)
 
-> Losing `secret.key` means your encrypted passwords cannot be recovered.
+```bash
+python generate_key.py
+```
 
-Keep your key file safe and backed up.
+### GUI
 
+```bash
+python main_gui.py
+```
 
+## Project Structure
 
-## Database Schema
+```
+Password-Manager/
+├── app/
+│   ├── cli/              # Terminal UI (menus, prompts, panels)
+│   ├── crypto/           # Fernet encryption & key management
+│   ├── database/         # SQLite connection, queries, repository
+│   ├── gui/              # PyQt6 GUI window and widgets
+│   ├── services/         # Business logic (password gen & service)
+│   └── utils/            # Clipboard, helpers, strength checker
+├── main.py               # CLI entry point
+├── main_gui.py           # GUI entry point
+├── generate_key.py       # Standalone key generator
+├── vault.db              # Encrypted credential store
+├── secret.key            # Encryption key (not tracked in git)
+└── requirements.txt      # Core dependencies
+```
 
-| Column     | Type      | Description               |
-| ---------- | --------- | ------------------------- |
-| id         | INTEGER   | Primary key               |
-| site       | TEXT      | Website or service name   |
-| username   | TEXT      | Account username          |
-| password   | TEXT      | Fernet encrypted password |
-| created_at | TIMESTAMP | Creation time             |
+## Configuration
 
+Settings are defined in `app/config.py`:
 
+| Constant   | Purpose                          |
+|------------|----------------------------------|
+| `VERSION`  | Application version              |
+| `DB_NAME`  | SQLite database file path        |
+| `KEY_FILE` | Encryption key file path         |
+| `STYLE`    | Rich terminal colour theme       |
 
-## Contributing
+Edit these values directly in that file.
 
-Contributions are welcome!
+## Security Notes
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Open a Pull Request
-
-
+- The encryption key (`secret.key`) is stored in the working directory. **Back it up securely** — losing it makes stored passwords irrecoverable.
+- Add `secret.key` and `vault.db` to `.gitignore` before sharing the repository.
+- The key file permissions are set to `0600` on Unix systems automatically.
 
 ## License
 
-This project is licensed under the terms of the [LICENSE](LICENSE).
+[MIT](LICENSE)
