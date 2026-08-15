@@ -16,7 +16,13 @@ A CLI and GUI password manager for securely storing and managing credentials wit
 
 ## Demo
 
-![Demo](assets/menu.gif)
+### CLI
+
+![CLI](assets/main.png)
+
+### GUI
+
+![GUI](assets/main_gui.png)
 
 ## Features
 
