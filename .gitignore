@@ -2,6 +2,9 @@
 secret.key
 vault.db
 *.db
+*.db-wal
+*.db-shm
 *.key
 __pycache__/
+.pytest_cache/
 .venv/

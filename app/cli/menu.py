@@ -14,6 +14,7 @@ from app.config import STYLE, VERSION
 from app.services.password_generator import generate_password
 from app.services.password_service import PasswordService
 from app.utils.clipboard import copy_to_clipboard
+from app.utils.helpers import safe_display_text
 from app.utils.password_strength import check_password_strength
 
 
@@ -30,11 +31,11 @@ def add_password(service: PasswordService) -> None:
         return
 
     password = prompt_or_back("Password", password=True)
+    if password is None:
+        return
 
     strength, color = check_password_strength(password)
     console.print(f"Password strength: [{color}]{strength}[/{color}]")
-    if password is None:
-        return
 
     service.add(site, username, password)
 
@@ -62,7 +63,7 @@ def list_passwords(service: PasswordService) -> None:
     table.add_column("Created")
 
     for row in rows:
-        table.add_row(str(row[0]), row[1], row[2], row[3])
+        table.add_row(*[safe_display_text(cell) for cell in row])
 
     console.print(table)
     pause()
@@ -127,7 +128,10 @@ def handle_generate_password() -> None:
 
     password = generate_password(length)
 
-    console.print(f"\nGenerated password:\n[bold cyan]{password}[/bold cyan]")
+    console.print(
+        f"\nGenerated password:\n[bold cyan]{safe_display_text(password)}"
+        "[/bold cyan]"
+    )
 
     copy = Prompt.ask("Copy to clipboard?", choices=["y", "n"], default="y")
     if copy.lower() == "y":

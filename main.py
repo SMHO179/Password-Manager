@@ -1,5 +1,6 @@
 """Password Manager — a CLI tool for securely storing and managing credentials."""
 
+import os
 import sys
 
 if __name__ == "__main__":
@@ -12,13 +13,17 @@ if __name__ == "__main__":
     from app.cli.menu import menu
     from app.config import KEY_FILE
     from app.crypto.encryption import init_fernet
-    from app.crypto.key_manager import load_or_create_key
+    from app.crypto.key_manager import KeyFileError, load_or_create_key
     from app.database.connection import init_db
     from app.database.repository import Repository
     from app.services.password_service import PasswordService
 
-    key_was_created = not KEY_FILE.exists()
-    key = load_or_create_key()
+    try:
+        key_was_created = not os.path.lexists(KEY_FILE)
+        key = load_or_create_key()
+    except KeyFileError as exc:
+        console.print(f"[red]Encryption key error:[/red] {exc}")
+        sys.exit(1)
     if key_was_created:
         console.print("[green]✔ Encryption key generated[/green]")
 

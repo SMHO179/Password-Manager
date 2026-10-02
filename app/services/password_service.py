@@ -43,4 +43,5 @@ class PasswordService:
         row = self._repo.get_by_id(entry_id)
         if row is None:
             return None
-        return (row[0], row[1], decrypt_password(row[2]))
+        # Coerce to text: a hostile/corrupt row may hold non-text values.
+        return (str(row[0]), str(row[1]), decrypt_password(row[2]))

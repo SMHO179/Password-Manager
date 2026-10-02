@@ -27,12 +27,13 @@ from PyQt6.QtWidgets import (
 )
 
 from app.config import VERSION, KEY_FILE
-from app.crypto.key_manager import load_or_create_key
-from app.crypto.encryption import init_fernet
+from app.crypto.key_manager import KeyFileError, load_or_create_key
+from app.crypto.encryption import EncryptionError, DecryptionError, init_fernet
 from app.database.connection import init_db
 from app.database.repository import Repository
 from app.services.password_service import PasswordService
 from app.services.password_generator import generate_password
+from app.utils.helpers import strip_control_chars
 from app.utils.password_strength import check_password_strength_gui
 
 # ── Initialised in main() ────────────────────────────────────────────────
@@ -483,12 +484,18 @@ class PasswordListWidget(QWidget):
     def load_passwords(self):
         rows = self.service.list_all()
 
+        # Vault rows are untrusted (a hostile/corrupt database may contain
+        # NULLs, non-text values, or control/bidi characters): coerce to
+        # text and strip display-hostile characters.
+        def _cell(value) -> str:
+            return strip_control_chars(value)
+
         self.table.setRowCount(len(rows))
         for i, row in enumerate(rows):
-            self.table.setItem(i, 0, QTableWidgetItem(str(row[0])))
-            self.table.setItem(i, 1, QTableWidgetItem(row[1]))
-            self.table.setItem(i, 2, QTableWidgetItem(row[2]))
-            self.table.setItem(i, 3, QTableWidgetItem(row[3]))
+            self.table.setItem(i, 0, QTableWidgetItem(_cell(row[0])))
+            self.table.setItem(i, 1, QTableWidgetItem(_cell(row[1])))
+            self.table.setItem(i, 2, QTableWidgetItem(_cell(row[2])))
+            self.table.setItem(i, 3, QTableWidgetItem(_cell(row[3])))
 
         if self.status_callback:
             self.status_callback(f"Loaded {len(rows)} password(s)")
@@ -498,7 +505,13 @@ class PasswordListWidget(QWidget):
         if selected < 0:
             return None
         id_item = self.table.item(selected, 0)
-        return int(id_item.text()) if id_item else None
+        if not id_item:
+            return None
+        try:
+            return int(id_item.text())
+        except (TypeError, ValueError):
+            # Malicious/corrupt vault rows may not hold a numeric id.
+            return None
 
     def view_password(self):
         entry_id = self.get_selected_id()
@@ -507,7 +520,15 @@ class PasswordListWidget(QWidget):
                                     "Please select a password to view.")
             return
 
-        details = self.service.get_details(entry_id)
+        try:
+            details = self.service.get_details(entry_id)
+        except DecryptionError:
+            QMessageBox.warning(
+                self, "Vault Integrity Error",
+                "This entry could not be decrypted. It may have been "
+                "tampered with, corrupted, or encrypted with a different key."
+            )
+            return
         if details:
             site, username, decrypted = details
             QMessageBox.information(
@@ -522,7 +543,15 @@ class PasswordListWidget(QWidget):
                                     "Please select a password to edit.")
             return
 
-        details = self.service.get_details(entry_id)
+        try:
+            details = self.service.get_details(entry_id)
+        except DecryptionError:
+            QMessageBox.warning(
+                self, "Vault Integrity Error",
+                "This entry could not be decrypted. It may have been "
+                "tampered with, corrupted, or encrypted with a different key."
+            )
+            return
         if details:
             site, username, decrypted = details
             dialog = EditPasswordDialog(
@@ -850,8 +879,12 @@ def main():
     app.setFont(font)
 
     global service
-    key = load_or_create_key()
-    init_fernet(key)
+    try:
+        key = load_or_create_key()
+        init_fernet(key)
+    except (KeyFileError, EncryptionError) as exc:
+        QMessageBox.critical(None, "Startup Error", str(exc))
+        sys.exit(1)
     init_db()
 
     repo = Repository()
